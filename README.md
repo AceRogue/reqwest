@@ -5,6 +5,9 @@
 [![MIT/Apache-2 licensed](https://img.shields.io/crates/l/reqwest.svg)](./LICENSE-APACHE)
 [![CI](https://github.com/seanmonstar/reqwest/workflows/CI/badge.svg)](https://github.com/seanmonstar/reqwest/actions?query=workflow%3ACI)
 
+Self-maintained version. Add boring ssl support for reqwest.
+
+
 An ergonomic, batteries-included HTTP Client for Rust.
 
 - Plain bodies, JSON, urlencoded, multipart
