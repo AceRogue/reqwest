@@ -1,6 +1,9 @@
-use boring::ssl::{SslConnectorBuilder, SslOptions};
+#[cfg(feature = "boring-tls")]
 use boring::ssl::{SslConnector, SslMethod, SslVersion};
-use http::{HeaderMap, header};
+#[cfg(feature = "boring-tls")]
+use boring::ssl::{SslConnectorBuilder, SslOptions};
+#[cfg(feature = "boring-tls")]
+use http::{header, HeaderMap};
 mod support;
 
 #[cfg(all(feature = "boring-tls", feature = "__tls"))]
@@ -31,13 +34,17 @@ async fn test_boring_tls() {
     println!("{:?}", body);
 }
 
+#[cfg(feature = "boring-tls")]
 fn headers() -> HeaderMap {
     let mut headers = header::HeaderMap::new();
     headers.insert("authority", "stockx.com".parse().unwrap());
     headers.insert("accept", "application/json".parse().unwrap());
     headers.insert("accept-language", "en-US".parse().unwrap());
     headers.insert("apollographql-client-name", "Iron".parse().unwrap());
-    headers.insert("apollographql-client-version", "2023.08.20.01".parse().unwrap());
+    headers.insert(
+        "apollographql-client-version",
+        "2023.08.20.01".parse().unwrap(),
+    );
     headers.insert("app-platform", "Iron".parse().unwrap());
     headers.insert("app-version", "2023.08.20.01".parse().unwrap());
     headers.insert("cache-control", "no-cache".parse().unwrap());
@@ -46,8 +53,16 @@ fn headers() -> HeaderMap {
     headers.insert("dnt", "1".parse().unwrap());
     headers.insert("origin", "https://stockx.com".parse().unwrap());
     headers.insert("pragma", "no-cache".parse().unwrap());
-    headers.insert("referer", "https://stockx.com/search?s=jordan".parse().unwrap());
-    headers.insert("sec-ch-ua", "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Google Chrome\";v=\"116\"".parse().unwrap());
+    headers.insert(
+        "referer",
+        "https://stockx.com/search?s=jordan".parse().unwrap(),
+    );
+    headers.insert(
+        "sec-ch-ua",
+        "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Google Chrome\";v=\"116\""
+            .parse()
+            .unwrap(),
+    );
     headers.insert("sec-ch-ua-mobile", "?0".parse().unwrap());
     headers.insert("sec-ch-ua-platform", "\"macOS\"".parse().unwrap());
     headers.insert("sec-fetch-dest", "empty".parse().unwrap());
@@ -56,11 +71,18 @@ fn headers() -> HeaderMap {
     headers.insert("selected-country", "JP".parse().unwrap());
     headers.insert("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36".parse().unwrap());
     headers.insert("x-operation-name", "GetSearchResults".parse().unwrap());
-    headers.insert("x-stockx-device-id", "94cbb3fc-3209-43ac-88c6-69ae4eada325".parse().unwrap());
-    headers.insert("x-stockx-session-id", "6729ec84-0838-4235-83e6-a8a97087a8b1".parse().unwrap());
+    headers.insert(
+        "x-stockx-device-id",
+        "94cbb3fc-3209-43ac-88c6-69ae4eada325".parse().unwrap(),
+    );
+    headers.insert(
+        "x-stockx-session-id",
+        "6729ec84-0838-4235-83e6-a8a97087a8b1".parse().unwrap(),
+    );
     headers
 }
 
+#[cfg(feature = "boring-tls")]
 fn create_ssl_connector_builder() -> SslConnectorBuilder {
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
