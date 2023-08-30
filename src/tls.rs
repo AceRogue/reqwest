@@ -439,6 +439,16 @@ impl Default for TlsBackend {
         {
             TlsBackend::Rustls
         }
+
+        #[cfg(all(feature = "boring-tls", not(feature = "default-tls")))]
+        {
+            use boring::ssl::{SslConnector, SslConnectorBuilder, SslMethod};
+
+            fn create_default_builder() -> SslConnectorBuilder {
+                SslConnector::builder(SslMethod::tls()).unwrap()
+            }
+            TlsBackend::BoringTls(Arc::new(create_default_builder))
+        }
     }
 }
 
