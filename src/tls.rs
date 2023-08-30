@@ -17,6 +17,11 @@ use rustls::{
     DigitallySignedStruct, Error as TLSError, ServerName,
 };
 use std::fmt;
+#[cfg(feature = "boring-tls")]
+use std::sync::Arc;
+
+#[cfg(feature = "boring-tls")]
+use boring;
 
 /// Represents a server X509 certificate.
 #[derive(Clone)]
@@ -389,7 +394,13 @@ pub(crate) enum TlsBackend {
     Rustls,
     #[cfg(feature = "__rustls")]
     BuiltRustls(rustls::ClientConfig),
-    #[cfg(any(feature = "native-tls", feature = "__rustls",))]
+
+    #[cfg(feature = "boring-tls")]
+    BoringTls,
+    #[cfg(feature = "boring-tls")]
+    BuiltBoringTls(Arc<dyn Fn() -> boring::ssl::SslConnectorBuilder + Send + Sync>),
+
+    #[cfg(any(feature = "native-tls", feature = "__rustls", feature = "boring-tls"))]
     UnknownPreconfigured,
 }
 
@@ -404,7 +415,11 @@ impl fmt::Debug for TlsBackend {
             TlsBackend::Rustls => write!(f, "Rustls"),
             #[cfg(feature = "__rustls")]
             TlsBackend::BuiltRustls(_) => write!(f, "BuiltRustls"),
-            #[cfg(any(feature = "native-tls", feature = "__rustls",))]
+            #[cfg(feature = "boring-tls")]
+            TlsBackend::BoringTls => write!(f, "BoringTls"),
+            #[cfg(feature = "boring-tls")]
+            TlsBackend::BuiltBoringTls(_) => write!(f, "BuiltBoringTls"),
+            #[cfg(any(feature = "native-tls", feature = "__rustls", feature = "boring-tls"))]
             TlsBackend::UnknownPreconfigured => write!(f, "UnknownPreconfigured"),
         }
     }

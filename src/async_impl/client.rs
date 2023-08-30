@@ -1,11 +1,13 @@
-#[cfg(any(feature = "native-tls", feature = "__rustls",))]
+#[cfg(any(feature = "native-tls", feature = "__rustls", feature = "boring-tls"))]
 use std::any::Any;
-use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 use std::{fmt, str};
+use std::net::IpAddr;
 
+#[cfg(feature = "boring-tls")]
+use boring::ssl::SslConnectorBuilder;
 use bytes::Bytes;
 use http::header::{
     Entry, HeaderMap, HeaderValue, ACCEPT, ACCEPT_ENCODING, CONTENT_ENCODING, CONTENT_LENGTH,
@@ -419,6 +421,27 @@ impl ClientBuilder {
                     config.local_address,
                     config.nodelay,
                 ),
+                #[cfg(feature = "boring-tls")]
+                TlsBackend::BoringTls => {
+                    let tls = Arc::new(default_boring_tls_config);
+                    Connector::new_boring_tls(
+                        http,
+                        tls,
+                        proxies.clone(),
+                        user_agent(&config.headers),
+                        config.local_address,
+                        config.nodelay,
+                    )
+                }
+                #[cfg(feature = "boring-tls")]
+                TlsBackend::BuiltBoringTls(tls) => Connector::new_boring_tls(
+                    http,
+                    tls,
+                    proxies.clone(),
+                    user_agent(&config.headers),
+                    config.local_address,
+                    config.nodelay,
+                ),
                 #[cfg(feature = "__rustls")]
                 TlsBackend::BuiltRustls(conn) => {
                     #[cfg(feature = "http3")]
@@ -444,6 +467,7 @@ impl ClientBuilder {
                         config.nodelay,
                     )
                 }
+
                 #[cfg(feature = "__rustls")]
                 TlsBackend::Rustls => {
                     use crate::tls::NoVerifier;
@@ -588,7 +612,7 @@ impl ClientBuilder {
                         config.nodelay,
                     )
                 }
-                #[cfg(any(feature = "native-tls", feature = "__rustls",))]
+                #[cfg(any(feature = "native-tls", feature = "__rustls", feature = "boring-tls"))]
                 TlsBackend::UnknownPreconfigured => {
                     return Err(crate::error::builder(
                         "Unknown TLS backend passed to `use_preconfigured_tls`",
@@ -1433,6 +1457,21 @@ impl ClientBuilder {
         self
     }
 
+    /// Force using the boring TLS backend
+    ///
+    /// Since multiple TLS backends can be optionally enabled, this option will
+    /// force the `rustls` backend to be used for this `Client`.
+    ///
+    /// # Optional
+    ///
+    /// This requires the optional `boring-tls` feature to be enabled.
+    #[cfg(feature = "boring-tls")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+    pub fn use_boring_tls(mut self) -> ClientBuilder {
+        self.config.tls = TlsBackend::BoringTls;
+        self
+    }
+
     /// Use a preconfigured TLS backend.
     ///
     /// If the passed `Any` argument is not a TLS backend that reqwest
@@ -1451,9 +1490,14 @@ impl ClientBuilder {
     ///
     /// This requires one of the optional features `native-tls` or
     /// `rustls-tls(-...)` to be enabled.
-    #[cfg(any(feature = "native-tls", feature = "__rustls",))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "native-tls", feature = "rustls-tls"))))]
+    #[cfg(any(feature = "native-tls", feature = "__rustls", feature = "boring-tls"))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(any(feature = "native-tls", feature = "rustls-tls", feature = "boring-tls")))
+    )]
     pub fn use_preconfigured_tls(mut self, tls: impl Any) -> ClientBuilder {
+        use std::any::Any;
+
         let mut tls = Some(tls);
         #[cfg(feature = "native-tls")]
         {
@@ -1476,6 +1520,16 @@ impl ClientBuilder {
                 self.config.tls = tls;
                 return self;
             }
+        }
+        #[cfg(feature = "boring-tls")]
+        {
+            let t = (&mut tls as &mut dyn Any).downcast_mut::<Option<BoringSslBuilderWrapper>>();
+            if let Some(conn) = t {
+                let tls = conn.take().expect("is definitely Some");
+                let tls = crate::tls::TlsBackend::BuiltBoringTls(tls.inner);
+                self.config.tls = tls;
+                return self;
+            };
         }
 
         // Otherwise, we don't recognize the TLS backend!
@@ -1895,6 +1949,51 @@ impl fmt::Debug for ClientBuilder {
         self.config.fmt_fields(&mut builder);
         builder.finish()
     }
+}
+
+#[cfg(feature = "boring-tls")]
+fn default_boring_tls_config() -> SslConnectorBuilder {
+    let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
+    builder.set_grease_enabled(true);
+    builder.enable_ocsp_stapling();
+    let cipher_list = [
+        "TLS_AES_128_GCM_SHA256",
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+        "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+        "TLS_RSA_WITH_AES_128_GCM_SHA256",
+        "TLS_RSA_WITH_AES_256_GCM_SHA384",
+        "TLS_RSA_WITH_AES_128_CBC_SHA",
+        "TLS_RSA_WITH_AES_256_CBC_SHA",
+    ];
+    builder.set_cipher_list(&cipher_list.join(":")).unwrap();
+    let sigalgs_list = [
+        "ecdsa_secp256r1_sha256",
+        "rsa_pss_rsae_sha256",
+        "rsa_pkcs1_sha256",
+        "ecdsa_secp384r1_sha384",
+        "rsa_pss_rsae_sha384",
+        "rsa_pkcs1_sha384",
+        "rsa_pss_rsae_sha512",
+        "rsa_pkcs1_sha512",
+    ];
+    builder.set_sigalgs_list(&sigalgs_list.join(":")).unwrap();
+    builder.enable_signed_cert_timestamps();
+    builder.set_alpn_protos(b"\x02h2\x08http/1.1").unwrap();
+    builder
+        .set_min_proto_version(Some(SslVersion::TLS1_2))
+        .unwrap();
+    builder
+        .set_max_proto_version(Some(SslVersion::TLS1_3))
+        .unwrap();
+    builder
 }
 
 impl Config {
@@ -2442,6 +2541,28 @@ fn make_referer(next: &Url, previous: &Url) -> Option<HeaderValue> {
 fn add_cookie_header(headers: &mut HeaderMap, cookie_store: &dyn cookie::CookieStore, url: &Url) {
     if let Some(header) = cookie_store.cookies(url) {
         headers.insert(crate::header::COOKIE, header);
+    }
+}
+
+/// BoringSslWrapper for `use_preconfigured_tls`
+#[cfg(feature = "boring-tls")]
+#[cfg_attr(docsrs, doc(cfg(feature = "boring-tls")))]
+pub struct BoringSslBuilderWrapper {
+    inner: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
+}
+
+#[cfg(feature = "boring-tls")]
+impl BoringSslBuilderWrapper {
+    /// Create a new BoringSslWrapper
+    pub fn new(inner: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>) -> Self {
+        Self { inner }
+    }
+}
+
+#[cfg(feature = "boring-tls")]
+impl Debug for BoringSslBuilderWrapper {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BoringSslBuilderWrapper").finish()
     }
 }
 

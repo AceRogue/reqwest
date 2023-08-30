@@ -319,6 +319,9 @@ if_hyper! {
     pub use self::async_impl::{
         Body, Client, ClientBuilder, Request, RequestBuilder, Response, Upgraded,
     };
+    #[cfg(feature = "boring-tls")]
+    pub use self::async_impl::BoringSslBuilderWrapper;
+
     pub use self::proxy::{Proxy,NoProxy};
     #[cfg(feature = "__tls")]
     // Re-exports, to be removed in a future release

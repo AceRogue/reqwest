@@ -7,6 +7,9 @@ pub use self::upgrade::Upgraded;
 #[cfg(feature = "blocking")]
 pub(crate) use self::decoder::Decoder;
 
+#[cfg(feature = "boring-tls")]
+pub use self::client::BoringSslBuilderWrapper;
+
 pub mod body;
 pub mod client;
 pub mod decoder;
