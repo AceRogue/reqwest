@@ -447,7 +447,7 @@ impl Default for TlsBackend {
             fn create_default_builder() -> SslConnectorBuilder {
                 SslConnector::builder(SslMethod::tls()).unwrap()
             }
-            TlsBackend::BoringTls(Arc::new(create_default_builder))
+            TlsBackend::BoringTls
         }
     }
 }

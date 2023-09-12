@@ -1,7 +1,7 @@
 #[cfg(feature = "boring-tls")]
-use boring::ssl::{SslConnector, SslMethod, SslVersion};
+use boring::ssl::SslConnectorBuilder;
 #[cfg(feature = "boring-tls")]
-use boring::ssl::{SslConnectorBuilder, SslOptions};
+use boring::ssl::{SslConnector, SslMethod, SslVersion};
 #[cfg(feature = "boring-tls")]
 use http::{header, HeaderMap};
 mod support;
@@ -19,15 +19,14 @@ async fn test_boring_tls() {
         .redirect(reqwest::redirect::Policy::none())
         .build()
         .unwrap();
-
-    // let res = client
-    //     .get("https://tls.peet.ws/api/clean")
-    //     .send()
-    //     .await
-    //     .unwrap();
-    let res = client.post("https://stockx.com/api/p/e").headers(headers()).body(
-        "{\"query\":\"query GetSearchResults($filtersVersion: Int, $query: String!, $page: BrowsePageInput, $sort: BrowseSortInput, $staticRanking: BrowseExperimentStaticRankingInput) {\\n  browse(\\n    query: $query\\n    page: $page\\n    sort: $sort\\n    filtersVersion: $filtersVersion\\n    experiments: {staticRanking: $staticRanking}\\n  ) {\\n    categories {\\n      id\\n      name\\n      count\\n    }\\n    results {\\n      edges {\\n        objectId\\n        node {\\n          ... on Product {\\n            id\\n            urlKey\\n            primaryTitle\\n            secondaryTitle\\n            media {\\n              thumbUrl\\n            }\\n            brand\\n            productCategory\\n            ...FavoriteProductFragment\\n          }\\n          ... on Variant {\\n            id\\n            product {\\n              id\\n              urlKey\\n              primaryTitle\\n              secondaryTitle\\n              media {\\n                thumbUrl\\n              }\\n              brand\\n              productCategory\\n            }\\n          }\\n        }\\n      }\\n      pageInfo {\\n        limit\\n        page\\n        pageCount\\n        queryId\\n        queryIndex\\n        total\\n      }\\n    }\\n    sort {\\n      id\\n      order\\n    }\\n  }\\n}\\n\\nfragment FavoriteProductFragment on Product {\\n  favorite\\n}\",\"variables\":{\"filtersVersion\":4,\"query\":\"jordan1\",\"sort\":{\"id\":\"featured\",\"order\":\"DESC\"},\"staticRanking\":{\"enabled\":false},\"page\":{\"index\":1,\"limit\":10}},\"operationName\":\"GetSearchResults\"}"
-    ).send().await.unwrap();
+    let res = client
+        .get("https://tls.peet.ws/api/clean")
+        .send()
+        .await
+        .unwrap();
+    // let res = client.post("https://stockx.com/api/p/e").headers(headers()).body(
+    //     "{\"query\":\"query GetSearchResults($filtersVersion: Int, $query: String!, $page: BrowsePageInput, $sort: BrowseSortInput, $staticRanking: BrowseExperimentStaticRankingInput) {\\n  browse(\\n    query: $query\\n    page: $page\\n    sort: $sort\\n    filtersVersion: $filtersVersion\\n    experiments: {staticRanking: $staticRanking}\\n  ) {\\n    categories {\\n      id\\n      name\\n      count\\n    }\\n    results {\\n      edges {\\n        objectId\\n        node {\\n          ... on Product {\\n            id\\n            urlKey\\n            primaryTitle\\n            secondaryTitle\\n            media {\\n              thumbUrl\\n            }\\n            brand\\n            productCategory\\n            ...FavoriteProductFragment\\n          }\\n          ... on Variant {\\n            id\\n            product {\\n              id\\n              urlKey\\n              primaryTitle\\n              secondaryTitle\\n              media {\\n                thumbUrl\\n              }\\n              brand\\n              productCategory\\n            }\\n          }\\n        }\\n      }\\n      pageInfo {\\n        limit\\n        page\\n        pageCount\\n        queryId\\n        queryIndex\\n        total\\n      }\\n    }\\n    sort {\\n      id\\n      order\\n    }\\n  }\\n}\\n\\nfragment FavoriteProductFragment on Product {\\n  favorite\\n}\",\"variables\":{\"filtersVersion\":4,\"query\":\"jordan1\",\"sort\":{\"id\":\"featured\",\"order\":\"DESC\"},\"staticRanking\":{\"enabled\":false},\"page\":{\"index\":1,\"limit\":10}},\"operationName\":\"GetSearchResults\"}"
+    // ).send().await.unwrap();
 
     println!("{}", res.status());
     let body = res.text().await.unwrap();
@@ -87,7 +86,6 @@ fn create_ssl_connector_builder() -> SslConnectorBuilder {
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
 
     builder.set_grease_enabled(true);
-
     builder.enable_ocsp_stapling();
 
     let cipher_list = [
@@ -109,7 +107,6 @@ fn create_ssl_connector_builder() -> SslConnectorBuilder {
     ];
 
     builder.set_cipher_list(&cipher_list.join(":")).unwrap();
-
     let sigalgs_list = [
         "ecdsa_secp256r1_sha256",
         "rsa_pss_rsae_sha256",

@@ -1,10 +1,10 @@
 #[cfg(any(feature = "native-tls", feature = "__rustls", feature = "boring-tls"))]
 use std::any::Any;
+use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use std::{collections::HashMap, convert::TryInto, net::SocketAddr};
 use std::{fmt, str};
-use std::net::IpAddr;
 
 #[cfg(feature = "boring-tls")]
 use boring::ssl::SslConnectorBuilder;
@@ -1953,6 +1953,8 @@ impl fmt::Debug for ClientBuilder {
 
 #[cfg(feature = "boring-tls")]
 fn default_boring_tls_config() -> SslConnectorBuilder {
+    use boring::ssl::{SslConnector, SslMethod, SslVersion};
+
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
     builder.set_grease_enabled(true);
     builder.enable_ocsp_stapling();
@@ -2560,7 +2562,7 @@ impl BoringSslBuilderWrapper {
 }
 
 #[cfg(feature = "boring-tls")]
-impl Debug for BoringSslBuilderWrapper {
+impl fmt::Debug for BoringSslBuilderWrapper {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BoringSslBuilderWrapper").finish()
     }

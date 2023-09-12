@@ -1,5 +1,5 @@
 #[cfg(feature = "boring-tls")]
-use boring::ssl::SslConnectorBuilder;
+use boring::ssl::{ConnectConfiguration, SslConnectorBuilder};
 #[cfg(feature = "__tls")]
 use http::header::HeaderValue;
 use http::uri::{Authority, Scheme};
@@ -60,6 +60,15 @@ enum Inner {
         http: HttpConnector,
         tls: Arc<dyn Fn() -> SslConnectorBuilder + Send + Sync>,
     },
+}
+
+#[cfg(feature = "boring-tls")]
+fn tls_add_application_settings(conf: &mut ConnectConfiguration) {
+    use foreign_types::ForeignTypeRef;
+
+    unsafe {
+        boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1);
+    }
 }
 
 impl Connector {
@@ -332,6 +341,11 @@ impl Connector {
                     http.set_nodelay(true);
                 }
                 let mut http = hyper_boring::HttpsConnector::with_connector(http, tls())?;
+                http.set_callback(move |conf, _| {
+                    tls_add_application_settings(conf);
+                    Ok(())
+                });
+
                 let io = http.call(dst).await?;
                 if let hyper_boring::MaybeHttpsStream::Https(stream) = io {
                     if !self.nodelay {
@@ -447,8 +461,8 @@ impl Connector {
                     let mut http =
                         hyper_boring::HttpsConnector::with_connector(http, tls_connector)?;
 
-                    http.set_callback(|_, _| {
-                        // tls_add_application_settings(conf);
+                    http.set_callback(move |conf, _| {
+                        tls_add_application_settings(conf);
                         Ok(())
                     });
 
@@ -463,9 +477,8 @@ impl Connector {
                     )
                     .await?;
                     let tls_connector = tls().build();
-                    let conf = tls_connector.configure()?;
-
-                    // tls_add_application_settings(&mut conf);
+                    let mut conf = tls_connector.configure()?;
+                    tls_add_application_settings(&mut conf);
 
                     let io = tokio_boring::connect(conf, host.ok_or("no host in url")?, tunneled)
                         .await?;
