@@ -38,7 +38,14 @@ rustls-tls-manual-roots = ["__rustls"]
 rustls-tls-webpki-roots = ["webpki-roots", "__rustls"]
 rustls-tls-native-roots = ["rustls-native-certs", "__rustls"]
 
-boring-tls = ["hyper-boring", "boring", "tokio-boring", "boring-sys", "foreign-types"]
+boring-tls = [
+    "hyper-boring",
+    "boring",
+    "tokio-boring",
+    "boring-sys",
+    "foreign-types",
+    "__tls",
+]
 
 blocking = ["futures-util/io", "tokio/rt-multi-thread", "tokio/sync"]
 
@@ -82,6 +89,8 @@ __rustls = ["hyper-rustls", "tokio-rustls", "rustls", "__tls", "rustls-pemfile"]
 # When enabled, disable using the cached SYS_PROXIES.
 __internal_proxy_sys_no_cache = []
 
+__impersonate = ["boring-tls", "gzip", "brotli"]
+
 [dependencies]
 base64 = "0.21"
 http = "0.2"
@@ -96,10 +105,10 @@ futures-util = { version = "0.3.0", default-features = false }
 # Optional deps...
 
 # boring-tls
-hyper-boring = { version = "3.0.4", optional = true }
-boring = { version = "3.0.4", optional = true }
-tokio-boring = { version = "3.0.4", optional = true }
-boring-sys= { version = "3.0.4", optional = true }
+boring = { git = "https://github.com/AceRogue/boring.git", package = "boring", optional = true }
+hyper-boring = { git = "https://github.com/AceRogue/boring.git", package = "hyper-boring", optional = true }
+tokio-boring = { git = "https://github.com/AceRogue/boring.git", package = "tokio-boring", optional = true }
+boring-sys = { git = "https://github.com/AceRogue/boring.git", package = "boring-sys", optional = true }
 foreign-types = { version = "0.5.0", optional = true }
 
 
@@ -112,7 +121,7 @@ env_logger = "0.8"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 encoding_rs = "0.8"
 http-body = "0.4.0"
-hyper = { version = "0.14.18", default-features = false, features = [
+hyper = { version = "0.14.27", default-features = false, features = [
     "tcp",
     "http1",
     "http2",
@@ -181,7 +190,7 @@ futures-channel = { version = "0.3", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 env_logger = "0.8"
-hyper = { version = "0.14", default-features = false, features = [
+hyper = { version = "0.14.27", default-features = false, features = [
     "tcp",
     "stream",
     "http1",

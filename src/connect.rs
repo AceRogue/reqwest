@@ -68,6 +68,16 @@ fn tls_add_application_settings(conf: &mut ConnectConfiguration) {
 
     unsafe {
         boring_sys::SSL_set_permute_extensions(conf.as_ptr(), 1);
+
+        const ALPN_H2: &str = "h2";
+        const ALPN_H2_LEN: usize = ALPN_H2.len();
+        boring_sys::SSL_add_application_settings(
+            conf.as_ptr(),
+            ALPN_H2.as_ptr(),
+            ALPN_H2_LEN,
+            std::ptr::null(),
+            0,
+        );
     }
 }
 

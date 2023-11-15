@@ -1953,11 +1953,12 @@ impl fmt::Debug for ClientBuilder {
 
 #[cfg(feature = "boring-tls")]
 fn default_boring_tls_config() -> SslConnectorBuilder {
-    use boring::ssl::{SslConnector, SslMethod, SslVersion};
+    use boring::ssl::{SslConnector, SslMethod, SslVersion, SslVerifyMode};
 
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
     builder.set_grease_enabled(true);
     builder.enable_ocsp_stapling();
+    builder.set_verify(SslVerifyMode::NONE);
     let cipher_list = [
         "TLS_AES_128_GCM_SHA256",
         "TLS_AES_256_GCM_SHA384",
