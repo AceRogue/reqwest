@@ -76,6 +76,7 @@ impl Certificate {
     /// # Ok(())
     /// # }
     /// ```
+    #[allow(unused)]
     pub fn from_der(der: &[u8]) -> crate::Result<Certificate> {
         Ok(Certificate {
             #[cfg(feature = "native-tls-crate")]
@@ -101,6 +102,7 @@ impl Certificate {
     /// # Ok(())
     /// # }
     /// ```
+    #[allow(unused)]
     pub fn from_pem(pem: &[u8]) -> crate::Result<Certificate> {
         Ok(Certificate {
             #[cfg(feature = "native-tls-crate")]
@@ -442,11 +444,6 @@ impl Default for TlsBackend {
 
         #[cfg(all(feature = "boring-tls", not(feature = "default-tls")))]
         {
-            use boring::ssl::{SslConnector, SslConnectorBuilder, SslMethod};
-
-            fn create_default_builder() -> SslConnectorBuilder {
-                SslConnector::builder(SslMethod::tls()).unwrap()
-            }
             TlsBackend::BoringTls
         }
     }
@@ -490,8 +487,6 @@ impl ServerCertVerifier for NoVerifier {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[cfg(feature = "default-tls")]
     #[test]
     fn certificate_from_der_invalid() {

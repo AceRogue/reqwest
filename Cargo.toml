@@ -22,7 +22,7 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 features = ["blocking", "cookies", "json", "multipart"]
 
 [features]
-default = ["default-tls"]
+default = ["__impersonate"]
 
 # Note: this doesn't enable the 'native-tls' feature, which adds specific
 # functionality for it.
@@ -121,7 +121,7 @@ env_logger = "0.8"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 encoding_rs = "0.8"
 http-body = "0.4.0"
-hyper = { version = "0.14.27", default-features = false, features = [
+hyper = { git = "https://github.com/AceRogue/hyper.git", branch = "0.14.x", default-features = false, features = [
     "tcp",
     "http1",
     "http2",
@@ -190,7 +190,7 @@ futures-channel = { version = "0.3", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 env_logger = "0.8"
-hyper = { version = "0.14.27", default-features = false, features = [
+hyper = { git = "https://github.com/AceRogue/hyper.git", branch = "0.14.x", default-features = false, features = [
     "tcp",
     "stream",
     "http1",

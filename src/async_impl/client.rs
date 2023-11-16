@@ -128,6 +128,10 @@ struct Config {
     http2_initial_connection_window_size: Option<u32>,
     http2_adaptive_window: bool,
     http2_max_frame_size: Option<u32>,
+    http2_max_concurrent_streams: Option<u32>,
+    http2_max_header_list_size: Option<u32>,
+    http2_enable_push: Option<bool>,
+    http2_header_table_size: Option<u32>,
     http2_keep_alive_interval: Option<Duration>,
     http2_keep_alive_timeout: Option<Duration>,
     http2_keep_alive_while_idle: bool,
@@ -211,6 +215,10 @@ impl ClientBuilder {
                 http2_initial_connection_window_size: None,
                 http2_adaptive_window: false,
                 http2_max_frame_size: None,
+                http2_max_concurrent_streams: None,
+                http2_max_header_list_size: None,
+                http2_enable_push: None,
+                http2_header_table_size: None,
                 http2_keep_alive_interval: None,
                 http2_keep_alive_timeout: None,
                 http2_keep_alive_while_idle: false,
@@ -646,6 +654,19 @@ impl ClientBuilder {
         if let Some(http2_max_frame_size) = config.http2_max_frame_size {
             builder.http2_max_frame_size(http2_max_frame_size);
         }
+        if let Some(http2_max_concurrent_size) = config.http2_max_concurrent_streams {
+            builder.http2_max_concurrent_streams(http2_max_concurrent_size);
+        }
+        if let Some(http2_max_header_list_size) = config.http2_max_header_list_size {
+            builder.http2_max_header_list_size(http2_max_header_list_size);
+        }
+        if let Some(http2_enable_push) = config.http2_enable_push {
+            builder.http2_enable_push(http2_enable_push);
+        }
+        if let Some(http2_header_table_size) = config.http2_header_table_size {
+            builder.http2_header_table_size(http2_header_table_size);
+        }
+
         if let Some(http2_keep_alive_interval) = config.http2_keep_alive_interval {
             builder.http2_keep_alive_interval(http2_keep_alive_interval);
         }
@@ -1157,6 +1178,39 @@ impl ClientBuilder {
     /// Default is currently 16,384 but may change internally to optimize for common uses.
     pub fn http2_max_frame_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
         self.config.http2_max_frame_size = sz.into();
+        self
+    }
+
+    /// Sets the maximum concurrent streams to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_max_concurrent_streams(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.config.http2_max_concurrent_streams = sz.into();
+        self
+    }
+
+    /// Sets the max header list size to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_max_header_list_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.config.http2_max_header_list_size = sz.into();
+        self
+    }
+
+    /// Enables and disables the push feature for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+    pub fn http2_enable_push(mut self, sz: impl Into<Option<bool>>) -> ClientBuilder {
+        self.config.http2_enable_push = sz.into();
+        self
+    }
+
+    /// Sets the header table size to use for HTTP2.
+    ///
+    /// Passing `None` will do nothing.
+
+    pub fn http2_header_table_size(mut self, sz: impl Into<Option<u32>>) -> ClientBuilder {
+        self.config.http2_header_table_size = sz.into();
         self
     }
 
@@ -1953,7 +2007,7 @@ impl fmt::Debug for ClientBuilder {
 
 #[cfg(feature = "boring-tls")]
 fn default_boring_tls_config() -> SslConnectorBuilder {
-    use boring::ssl::{SslConnector, SslMethod, SslVersion, SslVerifyMode};
+    use boring::ssl::{SslConnector, SslMethod, SslVerifyMode, SslVersion};
 
     let mut builder = SslConnector::builder(SslMethod::tls()).unwrap();
     builder.set_grease_enabled(true);
